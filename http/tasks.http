@@ -1,0 +1,165 @@
+# Base URL
+@baseUrl = http://localhost:3000/api
+
+# Paste tokens here
+@adminToken = PASTE_ADMIN_TOKEN_HERE
+@managerToken = PASTE_MANAGER_TOKEN_HERE
+@memberToken = PASTE_MEMBER_TOKEN_HERE
+
+# Paste IDs here after creating
+@projectId = PASTE_PROJECT_ID_HERE
+@taskId = PASTE_TASK_ID_HERE
+
+###
+
+# ==========================================
+# 1. CREATE TASK (ADMIN or MANAGER)
+# ==========================================
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Design Homepage",
+  "description": "Create wireframes for homepage",
+  "priority": "HIGH",
+  "projectId": "{{projectId}}",
+  "assigneeId": "PASTE_MEMBER_USER_ID_HERE",
+  "dueDate": "2026-06-30T00:00:00.000Z"
+}
+
+###
+
+# ==========================================
+# 2. LIST ALL TASKS — ADMIN sees all
+# ==========================================
+GET {{baseUrl}}/tasks
+Authorization: Bearer {{adminToken}}
+
+###
+
+# ==========================================
+# 3. LIST TASKS WITH FILTERS
+# ==========================================
+GET {{baseUrl}}/tasks?status=TODO&priority=HIGH&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+###
+
+# ==========================================
+# 4. LIST TASKS — MEMBER sees only their tasks
+# ==========================================
+GET {{baseUrl}}/tasks
+Authorization: Bearer {{memberToken}}
+
+###
+
+# ==========================================
+# 5. GET TASK BY ID
+# ==========================================
+GET {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{adminToken}}
+
+###
+
+# ==========================================
+# 6. UPDATE TASK DETAILS (ADMIN or MANAGER)
+# ==========================================
+PUT {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "title": "Design Homepage v2",
+  "priority": "MEDIUM"
+}
+
+###
+
+# ==========================================
+# 7. STATUS TRANSITION: TODO → IN_PROGRESS
+# ==========================================
+PATCH {{baseUrl}}/tasks/{{taskId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_PROGRESS"
+}
+
+###
+
+# ==========================================
+# 8. STATUS TRANSITION: IN_PROGRESS → IN_REVIEW
+# ==========================================
+PATCH {{baseUrl}}/tasks/{{taskId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "IN_REVIEW"
+}
+
+###
+
+# ==========================================
+# 9. STATUS TRANSITION: IN_REVIEW → DONE
+# ==========================================
+PATCH {{baseUrl}}/tasks/{{taskId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "DONE"
+}
+
+###
+
+# ==========================================
+# 10. INVALID TRANSITION TEST
+# DONE → TODO should fail
+# ==========================================
+PATCH {{baseUrl}}/tasks/{{taskId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "TODO"
+}
+
+###
+
+# ==========================================
+# 11. STATUS → BLOCKED (from any active state)
+# Create a new task first to test this
+# ==========================================
+PATCH {{baseUrl}}/tasks/{{taskId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "BLOCKED"
+}
+
+###
+
+# ==========================================
+# 12. RBAC TEST — MEMBER tries to create task
+# Should return 403 FORBIDDEN
+# ==========================================
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{memberToken}}
+Content-Type: application/json
+
+{
+  "title": "Unauthorized Task",
+  "projectId": "{{projectId}}"
+}
+
+###
+
+# ==========================================
+# 13. DELETE TASK (ADMIN only)
+# ==========================================
+DELETE {{baseUrl}}/tasks/{{taskId}}
+Authorization: Bearer {{adminToken}}
