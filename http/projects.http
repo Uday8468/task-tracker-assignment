@@ -1,0 +1,89 @@
+# Base URL
+@baseUrl = http://localhost:3000/api
+
+# Paste accessToken from login response here
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzODg0ZjY4My0yMjlkLTRhMGYtYjExNi03ZjNjMTE5OTAzOTYiLCJlbWFpbCI6ImJvYkBnbWFpbC5jb20iLCJyb2xlIjoiTUVNQkVSIiwib3JnYW5pemF0aW9uSWQiOiJiZDIxNGI5NC1jZjY0LTQ1YzEtYTdjMy1hYjk3NjBmZTVkNjAiLCJpYXQiOjE3ODAwNDU3ODcsImV4cCI6MTc4MDA0NjY4N30.qgo0AaLq5FBqZbVI2jmIGPPRNW3Nqx_ZEyNdj4GcPEU
+
+###
+
+# ==========================================
+# 1. CREATE PROJECT (ADMIN or MANAGER)
+# ==========================================
+POST {{baseUrl}}/projects
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Website Redesign",
+  "description": "Redesign the company website"
+}
+
+###
+
+# ==========================================
+# 2. GET ALL PROJECTS (all roles)
+# ==========================================
+GET {{baseUrl}}/projects
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# 3. GET ALL PROJECTS WITH PAGINATION
+# ==========================================
+GET {{baseUrl}}/projects?page=1&limit=5
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# 4. GET PROJECT BY ID (all roles)
+# Replace PROJECT_ID with real id
+# ==========================================
+GET {{baseUrl}}/projects/6ddb06f0-4560-4336-a9e9-7a40afe7129b
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# 5. UPDATE PROJECT (ADMIN or MANAGER)
+# ==========================================
+PUT {{baseUrl}}/projects/6ddb06f0-4560-4336-a9e9-7a40afe7129b
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Website Redesign v2",
+  "description": "Updated description"
+}
+
+###
+
+# ==========================================
+# 6. DELETE PROJECT (ADMIN only)
+# ==========================================
+DELETE {{baseUrl}}/projects/6ddb06f0-4560-4336-a9e9-7a40afe7129b
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# RBAC TEST — MEMBER tries to create project
+# Should return 403 FORBIDDEN
+# ==========================================
+POST {{baseUrl}}/projects
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzODg0ZjY4My0yMjlkLTRhMGYtYjExNi03ZjNjMTE5OTAzOTYiLCJlbWFpbCI6ImJvYkBnbWFpbC5jb20iLCJyb2xlIjoiTUVNQkVSIiwib3JnYW5pemF0aW9uSWQiOiJiZDIxNGI5NC1jZjY0LTQ1YzEtYTdjMy1hYjk3NjBmZTVkNjAiLCJpYXQiOjE3ODAwNDU3ODcsImV4cCI6MTc4MDA0NjY4N30.qgo0AaLq5FBqZbVI2jmIGPPRNW3Nqx_ZEyNdj4GcPEU
+Content-Type: application/json
+
+{
+  "name": "Test Project"
+}
+
+###
+
+# ==========================================
+# RBAC TEST — MANAGER tries to delete project
+# Should return 403 FORBIDDEN
+# ==========================================
+DELETE {{baseUrl}}/projects/568e8788-cdd0-47ad-9a2a-804b0b2bc9b2
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzODg0ZjY4My0yMjlkLTRhMGYtYjExNi03ZjNjMTE5OTAzOTYiLCJlbWFpbCI6ImJvYkBnbWFpbC5jb20iLCJyb2xlIjoiTUVNQkVSIiwib3JnYW5pemF0aW9uSWQiOiJiZDIxNGI5NC1jZjY0LTQ1YzEtYTdjMy1hYjk3NjBmZTVkNjAiLCJpYXQiOjE3ODAwNDU3ODcsImV4cCI6MTc4MDA0NjY4N30.qgo0AaLq5FBqZbVI2jmIGPPRNW3Nqx_ZEyNdj4GcPEU

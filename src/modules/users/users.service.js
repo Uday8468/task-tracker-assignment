@@ -61,10 +61,8 @@ const getUserById = async (userId, organizationId) => {
 };
 
 const createUser = async (organizationId, { name, email, password, role }) => {
-  console.log('createUser called with email:', email);
   // Check if email already exists
   const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [email]);
-  console.log('existing user found:', existingUser.rows.length);
   if (existingUser.rows.length > 0) {
     throw new ConflictError('Email already registered');
   }
