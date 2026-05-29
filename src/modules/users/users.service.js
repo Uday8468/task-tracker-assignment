@@ -10,7 +10,6 @@ const getAllUsers = async (organizationId, filters) => {
   const params = [organizationId];
   let paramIndex = 2;
 
-  // Add optional filters
   if (role) {
     baseQuery += ` AND role = $${paramIndex}`;
     params.push(role);
@@ -23,14 +22,12 @@ const getAllUsers = async (organizationId, filters) => {
     paramIndex++;
   }
 
-  // Get total count for pagination
   const countResult = await db.query(
     `SELECT COUNT(*) FROM users WHERE organization_id = $1${role ? ` AND role = '${role}'` : ''}`,
     [organizationId]
   );
   const total = parseInt(countResult.rows[0].count);
 
-  // Add pagination
   baseQuery += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   params.push(limit, offset);
 
@@ -61,7 +58,6 @@ const getUserById = async (userId, organizationId) => {
 };
 
 const createUser = async (organizationId, { name, email, password, role }) => {
-  // Check if email already exists
   const existingUser = await db.query('SELECT id FROM users WHERE email = $1', [email]);
   if (existingUser.rows.length > 0) {
     throw new ConflictError('Email already registered');
@@ -86,7 +82,6 @@ const createUser = async (organizationId, { name, email, password, role }) => {
 };
 
 const updateUser = async (userId, organizationId, requestingUserId, { role, is_active }) => {
-  // Check user exists in same organization
   const userResult = await db.query(
     'SELECT id, role FROM users WHERE id = $1 AND organization_id = $2',
     [userId, organizationId]
@@ -96,12 +91,10 @@ const updateUser = async (userId, organizationId, requestingUserId, { role, is_a
     throw new NotFoundError('User not found');
   }
 
-  // ADMIN cannot change their own role
   if (userId === requestingUserId && role) {
     throw new ForbiddenError('You cannot change your own role');
   }
 
-  // If changing role away from ADMIN, ensure at least one ADMIN remains in org
   if (role && role !== 'ADMIN' && userResult.rows[0].role === 'ADMIN') {
     const adminCountResult = await db.query(
       'SELECT COUNT(*) FROM users WHERE organization_id = $1 AND role = $2 AND is_active = true',
@@ -147,7 +140,6 @@ const updateUser = async (userId, organizationId, requestingUserId, { role, is_a
 };
 
 const deleteUser = async (userId, organizationId, requestingUserId) => {
-  // ADMIN cannot deactivate themselves
   if (userId === requestingUserId) {
     throw new ForbiddenError('You cannot deactivate your own account');
   }
@@ -161,7 +153,6 @@ const deleteUser = async (userId, organizationId, requestingUserId) => {
     throw new NotFoundError('User not found');
   }
 
-  // If deactivating an ADMIN, ensure at least one ADMIN remains in org
   if (result.rows[0].role === 'ADMIN') {
     const adminCountResult = await db.query(
       'SELECT COUNT(*) FROM users WHERE organization_id = $1 AND role = $2 AND is_active = true',
@@ -173,7 +164,6 @@ const deleteUser = async (userId, organizationId, requestingUserId) => {
     }
   }
 
-  // Soft delete — just set is_active = false
   await db.query(
     'UPDATE users SET is_active = false, updated_at = NOW() WHERE id = $1',
     [userId]
@@ -209,7 +199,6 @@ const updateMe = async (userId, { name, currentPassword, newPassword }) => {
       throw new ValidationError('currentPassword is required to set a new password');
     }
 
-    // Verify current password
     const userResult = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
     const isValid = await bcrypt.compare(currentPassword, userResult.rows[0].password);
 

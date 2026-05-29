@@ -1,7 +1,6 @@
 const { AppError } = require('../utils/errors');
 
 const errorHandler = (err, req, res, next) => {
-  // Known errors we threw intentionally
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
       status: err.statusCode,
@@ -10,7 +9,6 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Unknown/unexpected errors
   console.error('Unexpected error:', err);
   return res.status(500).json({
     status: 500,

@@ -19,18 +19,15 @@ app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3001', creden
 app.use(express.json());
 app.use(cookieParser());
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/projects', projectsRoutes);
 app.use('/api/tasks', tasksRoutes);
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     status: 404,
@@ -39,7 +36,6 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler — must be last
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;

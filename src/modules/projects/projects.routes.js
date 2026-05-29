@@ -16,15 +16,10 @@ const updateProjectValidation = [
   body('description').optional().isString().withMessage('description must be a string'),
 ];
 
-// ALL roles can view projects
 router.get('/', authenticate, projectsController.getAllProjects);
 router.get('/:id', authenticate, projectsController.getProjectById);
-
-// ADMIN and MANAGER can create and update
 router.post('/', authenticate, authorize('ADMIN', 'MANAGER'), createProjectValidation, projectsController.createProject);
 router.put('/:id', authenticate, authorize('ADMIN', 'MANAGER'), updateProjectValidation, projectsController.updateProject);
-
-// Only ADMIN can delete
 router.delete('/:id', authenticate, authorize('ADMIN'), projectsController.deleteProject);
 
 module.exports = router;

@@ -3,7 +3,6 @@ const { UnauthorizedError } = require('../utils/errors');
 
 const authenticate = (req, res, next) => {
   try {
-    // Token comes in header as: Authorization: Bearer <token>
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -11,11 +10,8 @@ const authenticate = (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-
-    // Verify signature and decode payload
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach user info to request — available in all controllers
     req.user = {
       userId: decoded.userId,
       email: decoded.email,

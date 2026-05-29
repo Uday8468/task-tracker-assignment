@@ -23,14 +23,9 @@ const updateMeValidation = [
   body('newPassword').optional().isLength({ min: 6 }).withMessage('newPassword must be at least 6 characters'),
 ];
 
-// IMPORTANT: /me routes must come BEFORE /:id routes
-// Otherwise "me" gets treated as an ID
-
-// My profile — accessible by ALL roles
 router.get('/me', authenticate, usersController.getMe);
 router.put('/me', authenticate, updateMeValidation, usersController.updateMe);
 
-// Admin only routes
 router.get('/', authenticate, authorize('ADMIN'), usersController.getAllUsers);
 router.post('/', authenticate, authorize('ADMIN'), createUserValidation, usersController.createUser);
 router.get('/:id', authenticate, authorize('ADMIN'), usersController.getUserById);

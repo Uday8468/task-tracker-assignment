@@ -25,14 +25,11 @@ const generateRefreshToken = (user) => {
 };
 
 const register = async ({ name, email, password, role, organizationName, organizationId }) => {
-  // Get a client from pool for transaction
   const client = await db.pool.connect();
 
   try {
-    // Start transaction — if anything fails, ALL changes are rolled back
     await client.query('BEGIN');
 
-    // Check if email already exists
     const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
     if (existingUser.rows.length > 0) {
       throw new ConflictError('Email already registered');
@@ -60,10 +57,8 @@ const register = async ({ name, email, password, role, organizationName, organiz
       orgId = organizationId;
     }
 
-    // Hash password — never store plain text
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
     const userResult = await client.query(
       `INSERT INTO users (organization_id, name, email, password, role)
        VALUES ($1, $2, $3, $4, $5)
@@ -71,7 +66,6 @@ const register = async ({ name, email, password, role, organizationName, organiz
       [orgId, name, email, hashedPassword, role]
     );
 
-    // Commit — save all changes to DB permanently
     await client.query('COMMIT');
 
     const user = userResult.rows[0];
@@ -85,24 +79,17 @@ const register = async ({ name, email, password, role, organizationName, organiz
       createdAt: user.created_at,
     };
   } catch (err) {
-    // Rollback — undo ALL changes (org + user) if anything failed
     await client.query('ROLLBACK');
-
-    // PostgreSQL unique constraint error code is 23505
-    // This catches duplicate email at DB level as a safety net
     if (err.code === '23505') {
       throw new ConflictError('Email already registered');
     }
-
     throw err;
   } finally {
-    // Always release client back to pool
     client.release();
   }
 };
 
 const login = async ({ email, password }) => {
-  // Find user by email
   const result = await db.query('SELECT * FROM users WHERE email = $1 AND is_active = true', [email]);
   if (result.rows.length === 0) {
     throw new UnauthorizedError('Invalid email or password');
@@ -110,19 +97,16 @@ const login = async ({ email, password }) => {
 
   const user = result.rows[0];
 
-  // Compare password with stored hash
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     throw new UnauthorizedError('Invalid email or password');
   }
 
-  // Generate tokens
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
 
-  // Save refresh token in DB
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+  expiresAt.setDate(expiresAt.getDate() + 7);
 
   await db.query(
     'INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
@@ -131,7 +115,7 @@ const login = async ({ email, password }) => {
 
   return {
     accessToken,
-    refreshToken, // returned to controller so it can set httpOnly cookie
+    refreshToken,
     user: {
       id: user.id,
       name: user.name,
@@ -147,7 +131,6 @@ const refresh = async (refreshToken) => {
     throw new UnauthorizedError('Refresh token not found. Please login again');
   }
 
-  // Step 1: Check if refresh token exists in DB and is not expired
   const tokenResult = await db.query(
     'SELECT * FROM refresh_tokens WHERE token = $1 AND expires_at > NOW()',
     [refreshToken]
@@ -157,17 +140,14 @@ const refresh = async (refreshToken) => {
     throw new UnauthorizedError('Invalid or expired refresh token');
   }
 
-  // Step 2: Verify the token signature
   let decoded;
   try {
     decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
   } catch (err) {
-    // Token is tampered — delete it from DB immediately
     await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
     throw new UnauthorizedError('Invalid refresh token');
   }
 
-  // Step 3: Get user details
   const userResult = await db.query('SELECT * FROM users WHERE id = $1 AND is_active = true', [decoded.userId]);
   if (userResult.rows.length === 0) {
     throw new UnauthorizedError('User not found');
@@ -175,14 +155,10 @@ const refresh = async (refreshToken) => {
 
   const user = userResult.rows[0];
 
-  // Step 4: TRUE ROTATION
-  // Delete old refresh token — it is now single-use, cannot be used again
   await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
 
-  // Generate brand new refresh token
   const newRefreshToken = generateRefreshToken(user);
 
-  // Save new refresh token in DB with fresh 7 day expiry
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
@@ -191,10 +167,8 @@ const refresh = async (refreshToken) => {
     [user.id, newRefreshToken, expiresAt]
   );
 
-  // Step 5: Generate new access token
   const newAccessToken = generateAccessToken(user);
 
-  // Return BOTH tokens — client must update stored refresh token
   return {
     accessToken: newAccessToken,
     refreshToken: newRefreshToken,
@@ -205,8 +179,6 @@ const logout = async (refreshToken) => {
   if (!refreshToken) {
     throw new ValidationError('Refresh token is required');
   }
-
-  // Delete refresh token from DB — invalidates it permanently
   await db.query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
 };
 

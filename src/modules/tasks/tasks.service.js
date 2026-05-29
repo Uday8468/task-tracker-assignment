@@ -2,8 +2,6 @@ const db = require('../../config/db');
 const redis = require('../../config/redis');
 const { NotFoundError, ValidationError, ForbiddenError } = require('../../utils/errors');
 
-// Valid status transitions map
-// Key = current status, Value = allowed next statuses
 const VALID_TRANSITIONS = {
   TODO:        ['IN_PROGRESS', 'BLOCKED'],
   IN_PROGRESS: ['IN_REVIEW', 'BLOCKED'],
@@ -12,23 +10,18 @@ const VALID_TRANSITIONS = {
   BLOCKED:     ['IN_PROGRESS'],
 };
 
-// Cache TTL — 5 minutes
 const CACHE_TTL = 300;
 
-// Build a consistent cache key from request params
 const buildCacheKey = (organizationId, filters) => {
   const { assigneeId = 'all', status = 'all', priority = 'all', page = 1, limit = 10 } = filters;
   return `tasks:${organizationId}:${assigneeId}:${status}:${priority}:${page}:${limit}`;
 };
 
-// Invalidate all task cache for an organization
-// Called whenever a task is created, updated, deleted, or status changed
 const invalidateCache = async (organizationId) => {
   await redis.delByPattern(`tasks:${organizationId}:*`);
 };
 
 const createTask = async (organizationId, userId, { title, description, priority, assigneeId, projectId, dueDate }) => {
-  // Validate project belongs to same org
   const projectResult = await db.query(
     'SELECT id FROM projects WHERE id = $1 AND organization_id = $2',
     [projectId, organizationId]
@@ -37,7 +30,6 @@ const createTask = async (organizationId, userId, { title, description, priority
     throw new NotFoundError('Project not found');
   }
 
-  // Validate assignee belongs to same org (if provided)
   if (assigneeId) {
     const assigneeResult = await db.query(
       'SELECT id FROM users WHERE id = $1 AND organization_id = $2 AND is_active = true',
@@ -48,7 +40,6 @@ const createTask = async (organizationId, userId, { title, description, priority
     }
   }
 
-  // Validate due_date is in the future
   if (dueDate && new Date(dueDate) <= new Date()) {
     throw new ValidationError('due_date must be a future date');
   }
@@ -69,17 +60,14 @@ const getAllTasks = async (organizationId, userId, role, filters) => {
   const { status, priority, assigneeId, page = 1, limit = 10 } = filters;
   const offset = (page - 1) * limit;
 
-  // MEMBER can only see their own tasks
   const effectiveAssigneeId = role === 'MEMBER' ? userId : assigneeId;
 
-  // Try cache first
   const cacheKey = buildCacheKey(organizationId, { ...filters, assigneeId: effectiveAssigneeId });
   const cached = await redis.get(cacheKey);
   if (cached) {
     return { ...cached, fromCache: true };
   }
 
-  // Build dynamic query
   let baseQuery = `
     SELECT t.id, t.title, t.description, t.priority, t.status, t.due_date, t.created_at, t.updated_at,
            p.id as project_id, p.name as project_name,
@@ -113,7 +101,6 @@ const getAllTasks = async (organizationId, userId, role, filters) => {
     paramIndex++;
   }
 
-  // Count total for pagination
   const countQuery = baseQuery.replace(
     /SELECT .* FROM tasks/s,
     'SELECT COUNT(*) FROM tasks'
@@ -121,7 +108,6 @@ const getAllTasks = async (organizationId, userId, role, filters) => {
   const countResult = await db.query(countQuery, params);
   const total = parseInt(countResult.rows[0].count);
 
-  // Add ordering and pagination
   baseQuery += ` ORDER BY t.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
   params.push(parseInt(limit), offset);
 
@@ -137,7 +123,6 @@ const getAllTasks = async (organizationId, userId, role, filters) => {
     },
   };
 
-  // Store in cache
   await redis.set(cacheKey, data, CACHE_TTL);
 
   return data;
@@ -163,7 +148,6 @@ const getTaskById = async (taskId, organizationId, userId, role) => {
 
   const task = result.rows[0];
 
-  // MEMBER can only view tasks assigned to them
   if (role === 'MEMBER' && task.assignee_id !== userId) {
     throw new ForbiddenError('You can only view tasks assigned to you');
   }
@@ -181,7 +165,6 @@ const updateTask = async (taskId, organizationId, { title, description, priority
     throw new NotFoundError('Task not found');
   }
 
-  // Validate assignee if provided
   if (assigneeId) {
     const assigneeResult = await db.query(
       'SELECT id FROM users WHERE id = $1 AND organization_id = $2 AND is_active = true',
@@ -192,7 +175,6 @@ const updateTask = async (taskId, organizationId, { title, description, priority
     }
   }
 
-  // Validate due_date
   if (dueDate && new Date(dueDate) <= new Date()) {
     throw new ValidationError('due_date must be a future date');
   }
@@ -258,12 +240,10 @@ const updateTaskStatus = async (taskId, organizationId, userId, role, newStatus)
 
   const task = result.rows[0];
 
-  // Only assignee, MANAGER, or ADMIN can change status
   if (role === 'MEMBER' && task.assignee_id !== userId) {
     throw new ForbiddenError('Only the assignee can change this task status');
   }
 
-  // Validate status transition
   const allowedTransitions = VALID_TRANSITIONS[task.status];
   if (!allowedTransitions.includes(newStatus)) {
     throw new ValidationError(
