@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 require('./config/db');
 
 const authRoutes = require('./modules/auth/auth.routes');
+const usersRoutes = require('./modules/users/users.routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', usersRoutes);
 
 // 404 handler
 app.use((req, res) => {

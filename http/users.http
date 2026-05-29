@@ -1,0 +1,111 @@
+# Base URL
+@baseUrl = http://localhost:3000/api
+
+# Paste accessToken from login response here
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1NzlhY2M5OC05MWIwLTQyOGMtYjE5Yy1mOGU2NmQ3ZmY0ZmUiLCJlbWFpbCI6ImpvaG5AZ21haWwuY29tIiwicm9sZSI6IkFETUlOIiwib3JnYW5pemF0aW9uSWQiOiJiZDIxNGI5NC1jZjY0LTQ1YzEtYTdjMy1hYjk3NjBmZTVkNjAiLCJpYXQiOjE3ODAwNDI2NDEsImV4cCI6MTc4MDA0MzU0MX0.YklYQyUw-OxUzxZWZXqrVW2-UeEsAngKsIw_xGX8soo
+
+###
+
+# ==========================================
+# 1. GET MY PROFILE (all roles)
+# ==========================================
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# 2. UPDATE MY PROFILE (all roles)
+# ==========================================
+PUT {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "John Updated"
+}
+
+###
+
+# ==========================================
+# 3. UPDATE MY PASSWORD (all roles)
+# ==========================================
+PUT {{baseUrl}}/users/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "newpassword123",
+  "newPassword": "password123"
+}
+
+###
+
+# ==========================================
+# 4. GET ALL USERS (ADMIN only)
+# ==========================================
+GET {{baseUrl}}/users
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# 5. GET ALL USERS WITH FILTERS (ADMIN only)
+# ==========================================
+GET {{baseUrl}}/users?role=ADMIN&page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# 6. CREATE USER (ADMIN only)
+# ==========================================
+POST {{baseUrl}}/users
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "New Member",
+  "email": "newAdmin5@gmail.com",
+  "password": "password123",
+  "role": "ADMIN"
+}
+
+###
+
+# ==========================================
+# 7. GET USER BY ID (ADMIN only)
+# Replace USER_ID with real id from DB
+# ==========================================
+GET {{baseUrl}}/users/fe269839-91f8-4164-8b08-836df4fe3fbc
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# 8. UPDATE USER ROLE (ADMIN only)
+# ==========================================
+PUT {{baseUrl}}/users/579acc98-91b0-428c-b19c-f8e66d7ff4fe
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "role": "MANAGER"
+}
+
+###
+
+# ==========================================
+# 9. DEACTIVATE USER (ADMIN only)
+# ==========================================
+DELETE {{baseUrl}}/users/fe269839-91f8-4164-8b08-836df4fe3fbc
+Authorization: Bearer {{accessToken}}
+
+###
+
+# ==========================================
+# RBAC TEST — Login as MEMBER and try ADMIN route
+# Should return 403 FORBIDDEN
+# ==========================================
+GET {{baseUrl}}/users
+Authorization: Bearer PASTE_MEMBER_ACCESS_TOKEN_HERE
