@@ -1,0 +1,126 @@
+# Base URL
+@baseUrl = http://localhost:3000/api
+
+###
+
+# ==========================================
+# 1. REGISTER AS ADMIN (creates new org)
+# ==========================================
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Admin",
+  "email": "john@gmail.com",
+  "password": "password123",
+  "role": "ADMIN",
+  "organizationName": "My Company"
+}
+
+###
+
+# ==========================================
+# 2. REGISTER AS MANAGER (joins existing org)
+# Replace organizationId with real one from above response
+# ==========================================
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jane Manager",
+  "email": "bsukiran@gmail.com",
+  "password": "password123",
+  "role": "MANAGER",
+  "organizationId": "bd214b94-cf64-45c1-a7c3-ab9760fe5d60"
+}
+
+###
+
+# ==========================================
+# 3. REGISTER AS MEMBER (joins existing org)
+# ==========================================
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Bob Member",
+  "email": "bob@gmail.com",
+  "password": "password123",
+  "role": "MANAGER",
+  "organizationId": "bd214b94-cf64-45c1-a7c3-ab9760fe5d60"
+}
+
+###
+
+# ==========================================
+# 4. LOGIN
+# Copy accessToken from response for other requests
+# ==========================================
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "bob@gmail.com",
+  "password": "password123"
+}
+
+###
+
+# ==========================================
+# 5. REFRESH TOKEN
+# No body needed — cookie sent automatically
+# ==========================================
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+###
+
+# ==========================================
+# 6. LOGOUT
+# No body needed — cookie sent automatically
+# ==========================================
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+
+###
+
+# ==========================================
+# VALIDATION ERROR TESTS
+# ==========================================
+
+# Test: missing email
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "password": "password123",
+  "role": "ADMIN",
+  "organizationName": "Test Org"
+}
+
+###
+
+# Test: invalid role
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "test@gmail.com",
+  "password": "password123",
+  "role": "SUPERADMIN",
+  "organizationName": "Test Org"
+}
+
+###
+
+# Test: wrong password
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@gmail.com",
+  "password": "wrongpassword"
+}

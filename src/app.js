@@ -2,19 +2,29 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 
 require('./config/db');
+
+const authRoutes = require('./modules/auth/auth.routes');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3001', credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 
+// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
+// Routes
+app.use('/api/auth', authRoutes);
+
+// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     status: 404,
@@ -22,6 +32,9 @@ app.use((req, res) => {
     message: `Route ${req.method} ${req.url} not found`,
   });
 });
+
+// Global error handler — must be last
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
